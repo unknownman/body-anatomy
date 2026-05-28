@@ -13,8 +13,8 @@ class FrontBodyPainter extends CustomPainter {
     this.highlightedMuscles = const {},
   });
 
-  static const double _vw = 240;
-  static const double _vh = 440;
+  static const double _vw = 250;
+  static const double _vh = 450;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -26,257 +26,473 @@ class FrontBodyPainter extends CustomPainter {
     );
     canvas.scale(sc, sc);
 
-    _drawOutline(canvas);
+    _drawSilhouette(canvas);
     _drawMuscles(canvas);
+    _drawOutline(canvas);
 
     canvas.restore();
   }
 
-  // ── Computed dimensions ──
+  // ── Factors ──
   double get _cf => BodyCalculator.chestFactor(metrics);
   double get _wf => BodyCalculator.waistFactor(metrics);
   double get _hf => BodyCalculator.hipFactor(metrics);
   double get _sf => BodyCalculator.shoulderFactor(metrics);
   double get _af => BodyCalculator.armFactor(metrics);
-  bool get _isFemale => metrics.gender == Gender.female;
+  bool get _isF => metrics.gender == Gender.female;
 
-  // ── Y-coordinates ──
-  static const double yHeadT = 8;
-  static const double yHeadC = 30;
-  static const double yHeadB = 50;
-  static const double yNeckT = 46;
-  static const double yNeckB = 62;
-  static const double yShoul = 66;
-  static const double yArmpit = 84;
-  static const double yChest = 94;
-  static const double yWaist = 124;
-  static const double yHip = 152;
-  static const double yCrotch = 170;
-  static const double yKnee = 258;
-  static const double yAnkle = 355;
-  static const double yFoot = 375;
-  static const double yHand = 172;
+  // ── Y grid ──
+  static const double yHT = 15, yHC = 40, yHB = 63;
+  static const double yNB = 85;
+  static const double ySh = 92, yAx = 112, yCh = 130;
+  static const double yWa = 172, yHi = 218, yCr = 243;
+  static const double yEl = 188, yWr = 278, yHd = 308;
+  static const double yKn = 322, yAn = 408, yFt = 432;
+  static const double yBottom = 445;
 
-  // ── X-widths (right half) ──
-  double get _headR => 18.0;
-  double get _neckW => 12.0;
-  double get _shoulW => 34.0 * _sf * (_isFemale ? 0.92 : 1.0);
-  double get _armW => 8.0 * _af;
-  double get _chestW => 25.0 * _cf * (_isFemale ? 0.95 : 1.0);
-  double get _waistW => _isFemale ? 14.0 * _wf : 18.0 * _wf;
-  double get _hipW => _isFemale ? 22.0 * _hf : 18.0 * _hf;
-  double get _thighW => 15.0 * _af;
-  double get _calfW => 11.0 * _af;
+  // ── Widths (right half) ──
+  double get _hR => 20.0;
+  double get _nW => 15.0;
+  double get _sW => (_isF ? 38.0 : 42.0) * _sf;
+  double get _aW => 11.0 * _af;
+  double get _cW => (_isF ? 27.0 : 30.0) * _cf;
+  double get _wW => (_isF ? 16.0 : 22.0) * _wf;
+  double get _hW => (_isF ? 26.0 : 22.0) * _hf;
+  double get _tW => 17.0 * _af;
+  double get _cW2 => 13.0 * _af;
 
   // ─────────────────────────────────────────
-  //  LAYER 1: Outline
+  //  LAYER 1: Silhouette fill
   // ─────────────────────────────────────────
-  void _drawOutline(Canvas canvas) {
-    final paint = Paint()
-      ..color = Colors.black87
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final p = Path();
-
-    // ══ RIGHT HALF (top → bottom) ══
-    double hR = _headR, nW = _neckW, sW = _shoulW, aW = _armW;
-    double cW = _chestW, wW = _waistW, hW = _hipW;
-    double tW = _thighW, cW2 = _calfW;
-
-    // Head
-    p.moveTo(0, yHeadT);
-    p.quadraticBezierTo(hR * 0.8, yHeadT, hR, yHeadC - 6);
-    p.quadraticBezierTo(hR + 2, yHeadC + 2, hR * 0.7, yHeadB);
-
-    // Neck
-    p.cubicTo(nW * 0.5, yHeadB + 2, nW, yNeckB - 4, nW, yNeckB);
-
-    // Shoulder
-    p.cubicTo(nW + 6, yNeckB + 2, sW, yShoul - 2, sW, yShoul + 4);
-
-    // Arm outer
-    double aOut = sW + aW;
-    p.cubicTo(sW + 2, yShoul + 10, aOut, yShoul + 24, aOut, yHand - 20);
-    p.cubicTo(aOut + 1, yHand - 8, aOut - 1, yHand - 2, aOut - 2, yHand);
-
-    // Hand bottom
-    p.lineTo(sW + 2, yHand);
-
-    // Arm inner
-    p.cubicTo(sW + 2, yHand - 2, sW, yHand - 10, sW + 1, yHand - 22);
-    p.cubicTo(sW + 2, yArmpit + 10, sW + 3, yArmpit + 4, sW + 2, yArmpit + 6);
-
-    // Torso side (armpit → chest → waist → hip → crotch)
-    p.cubicTo(cW + 2, yArmpit + 12, cW + 4, yChest - 2, cW + 2, yChest + 4);
-    p.cubicTo(cW, yWaist - 12, wW + 2, yWaist - 4, wW, yWaist + 2);
-    p.cubicTo(wW - 1, yWaist + 8, hW + 1, yHip - 4, hW + 2, yHip + 2);
-    p.cubicTo(hW + 1, yHip + 8, hW * 0.4, yCrotch - 2, 0, yCrotch);
-
-    // Right leg inner (down)
-    p.cubicTo(tW * 0.35, yCrotch + 8, tW * 0.5, yKnee - 24, tW * 0.5, yKnee - 4);
-    p.cubicTo(tW * 0.4, yKnee + 4, cW2 * 0.3, yAnkle - 10, cW2 * 0.3, yAnkle);
-    p.cubicTo(cW2 * 0.3, yAnkle + 4, cW2 * 0.2, yFoot - 4, cW2 * 0.2, yFoot);
-
-    // Right foot bottom
-    double fOut = tW * 0.85;
-    p.lineTo(fOut + 2, yFoot);
-
-    // Right leg outer (up)
-    p.cubicTo(fOut + 3, yFoot - 4, fOut + 2, yAnkle + 4, fOut, yAnkle);
-    p.cubicTo(fOut - 1, yKnee + 4, fOut + 1, yKnee - 8, fOut, yKnee - 4);
-    p.cubicTo(fOut - 1, yHip + 12, hW + 1, yHip + 4, hW + 1, yHip + 2);
-
-    // ══ LEFT HALF (bottom → top, mirrored) ══
-    double m = -1.0;
-
-    // Left outer leg (up from foot to hip)
-    p.cubicTo(hW * m + 1, yHip + 4, fOut * m, yHip + 12, fOut * m, yKnee - 4);
-    p.cubicTo(fOut * m + 1, yKnee - 8, fOut * m - 1, yKnee + 4, fOut * m, yAnkle);
-    p.cubicTo(fOut * m + 2, yAnkle + 4, fOut * m + 3, yFoot - 4, fOut * m + 2, yFoot);
-
-    // Left foot bottom
-    p.lineTo(cW2 * 0.2 * m, yFoot);
-
-    // Left leg inner (up to crotch)
-    p.cubicTo(cW2 * 0.2 * m, yFoot - 4, cW2 * 0.3 * m, yAnkle + 4, cW2 * 0.3 * m, yAnkle);
-    p.cubicTo(cW2 * 0.3 * m, yAnkle - 10, tW * 0.4 * m, yKnee + 4, tW * 0.5 * m, yKnee - 4);
-    p.cubicTo(tW * 0.5 * m, yKnee - 24, tW * 0.35 * m, yCrotch + 8, 0, yCrotch);
-
-    // Left torso (up from crotch)
-    p.cubicTo(hW * 0.4 * m, yCrotch - 2, hW * m + 1, yHip + 8, hW * m + 2, yHip + 2);
-    p.cubicTo(hW * m + 1, yHip - 4, wW * m - 1, yWaist + 8, wW * m, yWaist + 2);
-    p.cubicTo(wW * m + 2, yWaist - 4, cW * m, yWaist - 12, cW * m + 2, yChest + 4);
-    p.cubicTo(cW * m + 4, yChest - 2, cW * m + 2, yArmpit + 12, sW * m + 2, yArmpit + 6);
-
-    // Left arm inner (up)
-    p.cubicTo(sW * m + 3, yArmpit + 4, sW * m + 2, yArmpit + 10, sW * m + 1, yHand - 22);
-    p.cubicTo(sW * m, yHand - 10, sW * m + 2, yHand - 2, sW * m + 2, yHand);
-
-    // Left hand bottom
-    p.lineTo((sW + 2) * m, yHand);
-
-    // Left arm outer (up)
-    p.cubicTo((sW + 2) * m, yHand - 2, aOut * m + 1, yHand - 8, aOut * m, yHand - 20);
-    p.cubicTo(aOut * m, yShoul + 24, sW * m + 2, yShoul + 10, sW * m, yShoul + 4);
-
-    // Left shoulder & neck
-    p.cubicTo(sW * m, yShoul - 2, nW * m + 6, yNeckB + 2, nW * m, yNeckB);
-    p.cubicTo(nW * m, yNeckB - 4, nW * 0.5 * m, yHeadB + 2, 0, yHeadB);
-
-    // Left head
-    p.quadraticBezierTo(hR * 0.7 * m, yHeadB, hR * m + 2, yHeadC + 2);
-    p.quadraticBezierTo(hR * m, yHeadC - 6, hR * 0.8 * m, yHeadT);
-    p.lineTo(0, yHeadT);
-
-    p.close();
-    canvas.drawPath(p, paint);
+  void _drawSilhouette(Canvas canvas) {
+    canvas.drawPath(
+      _buildSilhouettePath(),
+      Paint()
+        ..color = const Color(0xFFF2EDE8)
+        ..style = PaintingStyle.fill,
+    );
   }
 
   // ─────────────────────────────────────────
-  //  LAYER 2: Muscle Groups
+  //  LAYER 2: Outer dark outline
+  // ─────────────────────────────────────────
+  void _drawOutline(Canvas canvas) {
+    canvas.drawPath(
+      _buildSilhouettePath(),
+      Paint()
+        ..color = Colors.black87
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  // ── Build the full body silhouette ──
+  Path _buildSilhouettePath() {
+    final p = Path();
+    double hR = _hR, nW = _nW, sW = _sW, aW = _aW;
+    double cW = _cW, wW = _wW, hW = _hW, tW = _tW, c2 = _cW2;
+
+    // ── RIGHT HALF (top → bottom) ──
+    p.moveTo(0, yHT);
+
+    // Head
+    p.cubicTo(hR * 0.7, yHT, hR, yHC - 8, hR, yHC);
+    p.cubicTo(hR, yHC + 8, hR * 0.7, yHB, 0, yHB);
+
+    // Neck
+    p.cubicTo(nW * 0.4, yHB + 2, nW, yNB - 4, nW, yNB);
+
+    // Shoulder → arm outer
+    double aOut = sW + aW;
+    p.cubicTo(nW + 6, yNB + 2, sW, ySh - 2, sW, ySh + 4);
+    p.cubicTo(sW + 2, ySh + 12, aOut, ySh + 22, aOut, yEl - 10);
+    p.cubicTo(aOut + 2, yEl - 2, aOut + 2, yEl + 6, aOut, yWr - 8);
+    p.cubicTo(aOut - 1, yWr - 2, aOut - 1, yWr + 2, aOut - 2, yWr + 6);
+
+    // Hand with fingers
+    _buildRightHand(p, aOut);
+
+    // Hand → arm inner
+    p.lineTo(sW + 2, yWr + 6);
+    p.cubicTo(sW + 2, yWr - 2, sW + 1, yWr - 10, sW + 1, yEl + 4);
+    p.cubicTo(sW + 1, yEl - 8, sW + 3, yAx + 6, sW + 2, yAx + 8);
+
+    // Torso side
+    p.cubicTo(cW + 2, yAx + 14, cW + 4, yCh - 2, cW + 2, yCh + 4);
+    p.cubicTo(cW, yWa - 14, wW + 2, yWa - 4, wW, yWa + 2);
+    p.cubicTo(wW - 1, yWa + 8, hW + 1, yHi - 6, hW + 2, yHi + 2);
+    p.cubicTo(hW + 1, yHi + 10, hW * 0.4, yCr - 2, 0, yCr);
+
+    // Leg inner down
+    p.cubicTo(tW * 0.35, yCr + 8, tW * 0.5, yKn - 28, tW * 0.5, yKn - 4);
+    p.cubicTo(tW * 0.4, yKn + 4, c2 * 0.3, yAn - 12, c2 * 0.3, yAn);
+    p.cubicTo(c2 * 0.3, yAn + 4, c2 * 0.2, yFt - 4, c2 * 0.2, yFt);
+
+    // Foot bottom
+    double fO = tW * 0.85;
+    p.lineTo(fO + 2, yFt);
+
+    // Leg outer up
+    p.cubicTo(fO + 3, yFt - 4, fO + 2, yAn + 4, fO, yAn);
+    p.cubicTo(fO - 1, yKn + 4, fO + 1, yKn - 8, fO, yKn - 4);
+    p.cubicTo(fO - 1, yHi + 14, hW + 1, yHi + 4, hW + 1, yHi + 2);
+
+    // ── LEFT HALF (bottom → top) ──
+    double m = -1.0;
+
+    p.cubicTo(hW * m + 1, yHi + 4, fO * m, yHi + 14, fO * m, yKn - 4);
+    p.cubicTo(fO * m + 1, yKn - 8, fO * m - 1, yKn + 4, fO * m, yAn);
+    p.cubicTo(fO * m + 2, yAn + 4, fO * m + 3, yFt - 4, fO * m + 2, yFt);
+    p.lineTo(c2 * 0.2 * m, yFt);
+
+    p.cubicTo(c2 * 0.2 * m, yFt - 4, c2 * 0.3 * m, yAn + 4, c2 * 0.3 * m, yAn);
+    p.cubicTo(c2 * 0.3 * m, yAn - 12, tW * 0.4 * m, yKn + 4, tW * 0.5 * m, yKn - 4);
+    p.cubicTo(tW * 0.5 * m, yKn - 28, tW * 0.35 * m, yCr + 8, 0, yCr);
+
+    p.cubicTo(hW * 0.4 * m, yCr - 2, hW * m + 1, yHi + 10, hW * m + 2, yHi + 2);
+    p.cubicTo(hW * m + 1, yHi - 6, wW * m - 1, yWa + 8, wW * m, yWa + 2);
+    p.cubicTo(wW * m + 2, yWa - 4, cW * m, yWa - 14, cW * m + 2, yCh + 4);
+    p.cubicTo(cW * m + 4, yCh - 2, cW * m + 2, yAx + 14, sW * m + 2, yAx + 8);
+
+    // Left arm inner up
+    p.cubicTo(sW * m + 3, yAx + 6, sW * m + 1, yEl - 8, sW * m + 1, yEl + 4);
+    p.cubicTo(sW * m + 1, yWr - 10, sW * m + 2, yWr - 2, sW * m + 2, yWr + 6);
+    p.lineTo((aOut - aW + 2) * m, yWr + 6);
+
+    // Left hand
+    _buildLeftHand(p, aOut);
+
+    p.cubicTo(aOut * m + 2, yWr + 6, aOut * m + 1, yWr + 2, aOut * m, yWr - 8);
+    p.cubicTo(aOut * m + 2, yEl + 6, aOut * m + 2, yEl - 2, aOut * m, yEl - 10);
+    p.cubicTo(aOut * m, ySh + 22, sW * m + 2, ySh + 12, sW * m, ySh + 4);
+    p.cubicTo(sW * m, ySh - 2, nW * m + 6, yNB + 2, nW * m, yNB);
+    p.cubicTo(nW * m, yNB - 4, nW * 0.4 * m, yHB + 2, 0, yHB);
+
+    // Left head
+    p.cubicTo(hR * 0.7 * m, yHB, hR * m, yHC + 8, hR * m, yHC);
+    p.cubicTo(hR * m, yHC - 8, hR * 0.7 * m, yHT, 0, yHT);
+
+    p.close();
+    return p;
+  }
+
+  void _buildRightHand(Path p, double aOut) {
+    double hx = aOut - 2;
+    double hy = yWr + 6;
+
+    p.lineTo(hx - 1, hy + 2);
+    p.quadraticBezierTo(hx + 2, hy + 8, hx + 1, hy + 14);
+    p.quadraticBezierTo(hx, hy + 24, hx - 1, hy + 20);
+    p.quadraticBezierTo(hx - 2, hy + 14, hx - 3, hy + 16);
+    p.quadraticBezierTo(hx - 4, hy + 28, hx - 5, hy + 24);
+    p.quadraticBezierTo(hx - 6, hy + 16, hx - 7, hy + 18);
+    p.quadraticBezierTo(hx - 8, hy + 30, hx - 9, hy + 26);
+    p.quadraticBezierTo(hx - 10, hy + 18, hx - 11, hy + 20);
+    p.quadraticBezierTo(hx - 12, hy + 28, hx - 14, hy + 24);
+    p.quadraticBezierTo(hx - 16, hy + 18, hx - 17, hy + 16);
+    p.quadraticBezierTo(hx - 18, hy + 14, hx - 18, hy + 8);
+  }
+
+  void _buildLeftHand(Path p, double aOut) {
+    double hx = (aOut - 2) * -1;
+    double hy = yWr + 6;
+
+    p.lineTo(hx + 1, hy + 2);
+    p.quadraticBezierTo(hx - 2, hy + 8, hx - 1, hy + 14);
+    p.quadraticBezierTo(hx, hy + 24, hx + 1, hy + 20);
+    p.quadraticBezierTo(hx + 2, hy + 14, hx + 3, hy + 16);
+    p.quadraticBezierTo(hx + 4, hy + 28, hx + 5, hy + 24);
+    p.quadraticBezierTo(hx + 6, hy + 16, hx + 7, hy + 18);
+    p.quadraticBezierTo(hx + 8, hy + 30, hx + 9, hy + 26);
+    p.quadraticBezierTo(hx + 10, hy + 18, hx + 11, hy + 20);
+    p.quadraticBezierTo(hx + 12, hy + 28, hx + 14, hy + 24);
+    p.quadraticBezierTo(hx + 16, hy + 18, hx + 17, hy + 16);
+    p.quadraticBezierTo(hx + 18, hy + 14, hx + 18, hy + 8);
+  }
+
+  // ─────────────────────────────────────────
+  //  LAYER 3: Muscle Groups (puzzle style)
   // ─────────────────────────────────────────
   void _drawMuscles(Canvas canvas) {
-    _drawMuscle(canvas, 'deltoid_left', _buildDeltoid(-1));
-    _drawMuscle(canvas, 'deltoid_right', _buildDeltoid(1));
+    // Neck
+    _drawMuscle(canvas, 'sternocleidomastoid_left', _buildSCM(-1));
+    _drawMuscle(canvas, 'sternocleidomastoid_right', _buildSCM(1));
+    // Chest
     _drawMuscle(canvas, 'pectoral_left', _buildPectoral(-1));
     _drawMuscle(canvas, 'pectoral_right', _buildPectoral(1));
-    _drawMuscle(canvas, 'abdominals', _buildAbdominals());
+    // Shoulders
+    _drawMuscle(canvas, 'deltoid_left', _buildDeltoid(-1));
+    _drawMuscle(canvas, 'deltoid_right', _buildDeltoid(1));
+    // Arms
+    _drawMuscle(canvas, 'biceps_left', _buildBiceps(-1));
+    _drawMuscle(canvas, 'biceps_right', _buildBiceps(1));
+    _drawMuscle(canvas, 'brachioradialis_left', _buildBrachioradialis(-1));
+    _drawMuscle(canvas, 'brachioradialis_right', _buildBrachioradialis(1));
+    // Forearms
+    _drawMuscle(canvas, 'forearm_flexor_left', _buildForearm(-1));
+    _drawMuscle(canvas, 'forearm_flexor_right', _buildForearm(1));
+    // Abs
+    _drawMuscle(canvas, 'rectus_abdominis_upper_left', _buildAbs(-1, -1));
+    _drawMuscle(canvas, 'rectus_abdominis_upper_right', _buildAbs(1, -1));
+    _drawMuscle(canvas, 'rectus_abdominis_mid_left', _buildAbs(-1, 0));
+    _drawMuscle(canvas, 'rectus_abdominis_mid_right', _buildAbs(1, 0));
+    _drawMuscle(canvas, 'rectus_abdominis_lower_left', _buildAbs(-1, 1));
+    _drawMuscle(canvas, 'rectus_abdominis_lower_right', _buildAbs(1, 1));
+    // Serratus
+    _drawMuscle(canvas, 'serratus_anterior_left', _buildSerratus(-1));
+    _drawMuscle(canvas, 'serratus_anterior_right', _buildSerratus(1));
+    // Obliques
     _drawMuscle(canvas, 'obliques', _buildObliques());
-    _drawMuscle(canvas, 'quadriceps_left', _buildQuadriceps(-1));
-    _drawMuscle(canvas, 'quadriceps_right', _buildQuadriceps(1));
+    // Quads
+    _drawMuscle(canvas, 'quadriceps_rectus_femoris_left', _buildRF(-1));
+    _drawMuscle(canvas, 'quadriceps_rectus_femoris_right', _buildRF(1));
+    _drawMuscle(canvas, 'quadriceps_vastus_lateralis_left', _buildVL(-1));
+    _drawMuscle(canvas, 'quadriceps_vastus_lateralis_right', _buildVL(1));
+    _drawMuscle(canvas, 'quadriceps_vastus_medialis_left', _buildVM(-1));
+    _drawMuscle(canvas, 'quadriceps_vastus_medialis_right', _buildVM(1));
+    // Sartorius
+    _drawMuscle(canvas, 'sartorius_left', _buildSartorius(-1));
+    _drawMuscle(canvas, 'sartorius_right', _buildSartorius(1));
+    // Lower leg
+    _drawMuscle(canvas, 'tibialis_anterior_left', _buildTibialis(-1));
+    _drawMuscle(canvas, 'tibialis_anterior_right', _buildTibialis(1));
+    _drawMuscle(canvas, 'gastrocnemius_left', _buildGastrocnemius(-1));
+    _drawMuscle(canvas, 'gastrocnemius_right', _buildGastrocnemius(1));
+    // ── Backward-compat aliases ──
+    _drawMuscle(canvas, 'abdominals', _buildCombinedAbs());
+    _drawMuscle(canvas, 'quadriceps_left', _buildCombinedQuad(-1));
+    _drawMuscle(canvas, 'quadriceps_right', _buildCombinedQuad(1));
   }
 
   void _drawMuscle(Canvas canvas, String key, Path path) {
     final color = highlightedMuscles[key];
-    if (color == null) {
-      canvas.drawPath(path, Paint()
-        ..color = Colors.grey.withValues(alpha: 0.08)
-        ..style = PaintingStyle.fill);
-      return;
-    }
+    final fillColor = color ?? Colors.grey.withValues(alpha: 0.12);
+    final strokeColor = Colors.white;
+
     canvas.drawPath(path, Paint()
-      ..color = color.withValues(alpha: 0.55)
+      ..color = fillColor
       ..style = PaintingStyle.fill);
+
     canvas.drawPath(path, Paint()
-      ..color = color.withValues(alpha: 0.8)
+      ..color = strokeColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
+      ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round);
   }
 
-  // ── Muscle builders ──
+  // ═══════════════════════════════════════
+  //  MUSCLE BUILDERS
+  // ═══════════════════════════════════════
 
-  Path _buildDeltoid(int side) {
+  Path _buildSCM(int side) {
     double s = side.toDouble();
-    double sW = _shoulW, aW = _armW, cW = _chestW;
+    double nW = _nW;
     final p = Path();
-    p.moveTo(sW * s, yShoul + 2);
-    p.quadraticBezierTo((sW + aW + 2) * s, yShoul + 16, (sW + aW - 1) * s, yShoul + 40);
-    p.quadraticBezierTo((sW + 2) * s, yArmpit - 4, cW * 0.6 * s, yArmpit + 2);
-    p.quadraticBezierTo(cW * 0.3 * s, yShoul + 10, sW * s, yShoul + 2);
+    p.moveTo(4, yHB + 4);
+    p.quadraticBezierTo(nW * 0.7 * s, yHB + 10, nW * s * 0.8, yNB - 6);
+    p.quadraticBezierTo(nW * s * 0.5, yNB - 2, 3, yNB - 4);
     p.close();
     return p;
   }
 
   Path _buildPectoral(int side) {
     double s = side.toDouble();
-    double cW = _chestW;
+    double cW = _cW;
     final p = Path();
-    p.moveTo(2, yChest - 8);
-    p.quadraticBezierTo(cW * 0.7 * s, yChest - 14, cW * s, yChest - 2);
-    p.quadraticBezierTo(cW * s * 0.9, yChest + 8, cW * 0.5 * s, yChest + 14);
-    p.quadraticBezierTo(cW * 0.2 * s, yChest + 16, 2, yChest + 10);
+    p.moveTo(2, yCh - 10);
+    p.quadraticBezierTo(cW * 0.6 * s, yCh - 16, cW * s, yCh - 4);
+    p.quadraticBezierTo(cW * s * 0.85, yCh + 8, cW * 0.5 * s, yCh + 14);
+    p.quadraticBezierTo(2, yCh + 18, 2, yCh + 8);
     p.close();
     return p;
   }
 
-  Path _buildAbdominals() {
-    double wW = _waistW;
+  Path _buildDeltoid(int side) {
+    double s = side.toDouble();
+    double sW = _sW, aW = _aW;
     final p = Path();
-    p.moveTo(0, yChest + 14);
-    p.quadraticBezierTo(wW * 0.5, yChest + 18, wW * 0.5, yWaist - 4);
-    p.quadraticBezierTo(wW * 0.4, yWaist + 2, 0, yWaist);
-    p.quadraticBezierTo(wW * -0.4, yWaist + 2, wW * -0.5, yWaist - 4);
-    p.quadraticBezierTo(wW * -0.5, yChest + 18, 0, yChest + 14);
+    p.moveTo(sW * s, ySh + 2);
+    p.quadraticBezierTo((sW + aW + 2) * s, ySh + 14, (sW + aW) * s, ySh + 40);
+    p.quadraticBezierTo((sW + 2) * s, ySh + 52, sW * s * 0.5, yAx - 2);
+    p.quadraticBezierTo(sW * 0.3 * s, ySh + 10, sW * s, ySh + 2);
+    p.close();
+    return p;
+  }
+
+  Path _buildBiceps(int side) {
+    double s = side.toDouble();
+    double sW = _sW, aW = _aW;
+    final p = Path();
+    p.moveTo((sW + aW - 2) * s, ySh + 38);
+    p.quadraticBezierTo((sW + aW - 1) * s, ySh + 50, (sW + aW * 0.4) * s, yEl - 14);
+    p.quadraticBezierTo((sW + 2) * s, yEl - 6, (sW + 1) * s, ySh + 50);
+    p.quadraticBezierTo((sW + 2) * s, ySh + 40, (sW + aW - 2) * s, ySh + 38);
+    p.close();
+    return p;
+  }
+
+  Path _buildBrachioradialis(int side) {
+    double s = side.toDouble();
+    double sW = _sW, aW = _aW;
+    final p = Path();
+    p.moveTo((sW + aW - 1) * s, yEl - 6);
+    p.quadraticBezierTo((sW + aW) * s, yEl + 10, (sW + aW - 1) * s, yWr - 6);
+    p.quadraticBezierTo((sW + aW * 0.5) * s, yWr - 2, (sW + aW * 0.4) * s, yEl + 4);
+    p.close();
+    return p;
+  }
+
+  Path _buildForearm(int side) {
+    double s = side.toDouble();
+    double sW = _sW, aW = _aW;
+    final p = Path();
+    p.moveTo((sW + aW * 0.4) * s, yEl + 4);
+    p.quadraticBezierTo((sW + aW * 0.5) * s, yWr - 2, (sW + 2) * s, yWr - 4);
+    p.quadraticBezierTo((sW + 2) * s, yEl + 10, (sW + aW * 0.4) * s, yEl + 4);
+    p.close();
+    return p;
+  }
+
+  Path _buildAbs(int side, int row) {
+    double s = side.toDouble();
+    double wW = _wW;
+    double y0, y1;
+    switch (row) {
+      case -1: y0 = yCh + 14; y1 = yWa - 18; break;
+      case 0:  y0 = yWa - 18; y1 = yWa + 14; break;
+      default: y0 = yWa + 14; y1 = yHi - 8; break;
+    }
+    double hw = wW * 0.4 * s;
+    final p = Path();
+    p.moveTo(2, y0);
+    p.quadraticBezierTo(hw, y0 + 2, hw, y0 + 6);
+    p.quadraticBezierTo(hw, y1 - 4, hw * 0.8, y1);
+    p.quadraticBezierTo(hw * 0.4, y1 + 2, 2, y1);
+    p.close();
+    return p;
+  }
+
+  Path _buildSerratus(int side) {
+    double s = side.toDouble();
+    double cW = _cW;
+    final p = Path();
+    p.moveTo(cW * 0.5 * s, yCh + 4);
+    p.quadraticBezierTo(cW * s * 0.8, yCh + 6, cW * s * 0.75, yCh + 14);
+    p.quadraticBezierTo(cW * s * 0.7, yWa - 14, cW * 0.4 * s, yWa - 8);
+    p.quadraticBezierTo(cW * 0.3 * s, yCh + 14, cW * 0.5 * s, yCh + 4);
     p.close();
     return p;
   }
 
   Path _buildObliques() {
-    double wW = _waistW, cW = _chestW;
-
-    // Build right side, then reflect
+    double wW = _wW, cW = _cW;
     final p = Path();
-    p.moveTo(wW * 0.5, yWaist - 4);
-    p.quadraticBezierTo(wW * 0.7, yChest + 12, cW * 0.6, yChest + 14);
-    p.quadraticBezierTo(cW * 0.8, yChest + 18, cW * 0.75, yChest + 10);
-    p.quadraticBezierTo(cW * 0.7, yHip - 8, wW * 0.6, yWaist + 2);
+    p.moveTo(wW * 0.5, yWa - 4);
+    p.quadraticBezierTo(cW * 0.75, yCh + 12, cW * 0.7, yCh + 16);
+    p.quadraticBezierTo(cW * 0.85, yCh + 20, cW * 0.8, yCh + 10);
+    p.quadraticBezierTo(cW * 0.7, yHi - 10, wW * 0.6, yWa + 4);
     p.close();
-
-    final pMirror = Path();
-    final mat = Float64List.fromList([
-      -1, 0, 0, 0,
-      0, 1, 0, 0,
-      0, 0, 1, 0,
-      0, 0, 0, 1,
-    ]);
-    pMirror.addPath(p, Offset.zero, matrix4: mat);
-    p.addPath(pMirror, Offset.zero);
+    // Mirror
+    final pm = Path();
+    final mat = Float64List.fromList([-1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+    pm.addPath(p, Offset.zero, matrix4: mat);
+    p.addPath(pm, Offset.zero);
     return p;
   }
 
-  Path _buildQuadriceps(int side) {
+  Path _buildRF(int side) {
     double s = side.toDouble();
-    double tW = _thighW;
+    double tW = _tW;
     final p = Path();
-    p.moveTo(4, yCrotch + 4);
-    p.quadraticBezierTo(tW * 0.7 * s, yCrotch + 18, tW * 0.7 * s, yKnee - 18);
-    p.quadraticBezierTo(tW * 0.5 * s, yKnee - 2, tW * 0.3 * s, yKnee);
-    p.quadraticBezierTo(2, yKnee - 2, 2, yCrotch + 6);
+    p.moveTo(4, yCr + 6);
+    p.quadraticBezierTo(tW * 0.45 * s, yCr + 14, tW * 0.45 * s, yKn - 24);
+    p.quadraticBezierTo(tW * 0.35 * s, yKn - 4, tW * 0.2 * s, yKn + 2);
+    p.quadraticBezierTo(2, yKn - 2, 2, yCr + 10);
+    p.close();
+    return p;
+  }
+
+  Path _buildVL(int side) {
+    double s = side.toDouble();
+    double tW = _tW;
+    final p = Path();
+    p.moveTo(tW * 0.45 * s, yCr + 14);
+    p.quadraticBezierTo(tW * 0.7 * s, yCr + 20, tW * 0.7 * s, yKn - 20);
+    p.quadraticBezierTo(tW * 0.65 * s, yKn - 4, tW * 0.45 * s, yKn - 4);
+    p.quadraticBezierTo(tW * 0.45 * s, yKn - 24, tW * 0.45 * s, yCr + 14);
+    p.close();
+    return p;
+  }
+
+  Path _buildVM(int side) {
+    double s = side.toDouble();
+    double tW = _tW;
+    final p = Path();
+    p.moveTo(tW * 0.2 * s, yKn - 6);
+    p.quadraticBezierTo(tW * 0.4 * s, yKn - 14, tW * 0.45 * s, yKn - 20);
+    p.quadraticBezierTo(tW * 0.4 * s, yKn - 2, tW * 0.2 * s, yKn + 2);
+    p.close();
+    return p;
+  }
+
+  Path _buildSartorius(int side) {
+    double s = side.toDouble();
+    double hW = _hW, tW = _tW;
+    final p = Path();
+    p.moveTo(hW * 0.6 * s, yHi - 6);
+    p.quadraticBezierTo(hW * 0.3 * s, yCr + 6, tW * 0.3 * s, yCr + 12);
+    p.quadraticBezierTo(tW * 0.1 * s, yCr + 16, tW * 0.1 * s, yKn - 20);
+    p.quadraticBezierTo(tW * 0.2 * s, yKn - 6, tW * 0.3 * s, yCr + 12);
+    p.close();
+    return p;
+  }
+
+  Path _buildTibialis(int side) {
+    double s = side.toDouble();
+    double c2 = _cW2;
+    final p = Path();
+    p.moveTo(c2 * 0.3 * s, yKn + 6);
+    p.quadraticBezierTo(c2 * 0.5 * s, yKn + 18, c2 * 0.5 * s, yAn - 18);
+    p.quadraticBezierTo(c2 * 0.4 * s, yAn - 4, c2 * 0.25 * s, yAn - 2);
+    p.quadraticBezierTo(c2 * 0.15 * s, yKn + 12, c2 * 0.3 * s, yKn + 6);
+    p.close();
+    return p;
+  }
+
+  Path _buildGastrocnemius(int side) {
+    double s = side.toDouble();
+    double c2 = _cW2;
+    final p = Path();
+    p.moveTo(c2 * 0.3 * s, yKn + 6);
+    p.quadraticBezierTo(c2 * 0.5 * s, yKn + 14, c2 * 0.45 * s, yAn - 60);
+    p.quadraticBezierTo(c2 * 0.35 * s, yAn - 20, c2 * 0.25 * s, yAn - 2);
+    p.quadraticBezierTo(c2 * 0.2 * s, yKn + 14, c2 * 0.3 * s, yKn + 6);
+    p.close();
+    return p;
+  }
+
+  Path _buildCombinedAbs() {
+    double wW = _wW;
+    final p = Path();
+    p.moveTo(0, yCh + 14);
+    p.quadraticBezierTo(wW * 0.4, yCh + 16, wW * 0.4, yWa - 4);
+    p.quadraticBezierTo(wW * 0.35, yHi - 6, 0, yHi - 8);
+    p.quadraticBezierTo(wW * -0.35, yHi - 6, wW * -0.4, yWa - 4);
+    p.quadraticBezierTo(wW * -0.4, yCh + 16, 0, yCh + 14);
+    p.close();
+    return p;
+  }
+
+  Path _buildCombinedQuad(int side) {
+    double s = side.toDouble(), tW = _tW;
+    final p = Path();
+    p.moveTo(4, yCr + 6);
+    p.quadraticBezierTo(tW * 0.7 * s, yCr + 16, tW * 0.7 * s, yKn - 20);
+    p.quadraticBezierTo(tW * 0.5 * s, yKn - 2, tW * 0.2 * s, yKn + 2);
+    p.quadraticBezierTo(2, yKn - 2, 2, yCr + 10);
     p.close();
     return p;
   }

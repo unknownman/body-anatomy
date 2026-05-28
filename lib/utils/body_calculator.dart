@@ -3,7 +3,6 @@ import '../models/body_metrics.dart';
 class BodyCalculator {
   BodyCalculator._();
 
-  // Reference values for an average adult
   static const double _refChest = 100.0;
   static const double _refWaist = 85.0;
   static const double _refHip = 98.0;
