@@ -9,17 +9,17 @@ class BodyCalculator {
   static const double _refCollar = 42.0;
 
   static double chestFactor(BodyMetrics m) =>
-      (m.chestCm / _refChest).clamp(0.7, 1.4);
+      (m.chestCm / _refChest).clamp(0.75, 1.35);
 
   static double waistFactor(BodyMetrics m) =>
-      (m.waistCm / _refWaist).clamp(0.65, 1.5);
+      (m.waistCm / _refWaist).clamp(0.7, 1.35);
 
   static double hipFactor(BodyMetrics m) =>
-      (m.hipCm / _refHip).clamp(0.7, 1.4);
+      (m.hipCm / _refHip).clamp(0.75, 1.35);
 
   static double shoulderFactor(BodyMetrics m) =>
-      (m.shoulderWidth / (_refCollar * 1.5)).clamp(0.7, 1.3);
+      (m.shoulderWidth / (_refCollar * 1.5)).clamp(0.8, 1.25);
 
   static double armFactor(BodyMetrics m) =>
-      (m.bmi / 24.0).clamp(0.6, 1.5);
+      (m.bmi / 22.5).clamp(0.75, 1.3);
 }
