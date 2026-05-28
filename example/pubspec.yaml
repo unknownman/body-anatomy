@@ -1,0 +1,12 @@
+name: body_anatomy_viewer_example
+description: Example app for body_anatomy_viewer
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  body_anatomy_viewer:
+    path: ../
