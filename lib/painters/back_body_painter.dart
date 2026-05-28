@@ -15,12 +15,6 @@ class BackBodyPainter extends CustomPainter {
   static const double _vw = 240;
   static const double _vh = 440;
 
-  double get _cf => BodyCalculator.chestFactor(metrics);
-  double get _wf => BodyCalculator.waistFactor(metrics);
-  double get _hf => BodyCalculator.hipFactor(metrics);
-  double get _sf => BodyCalculator.shoulderFactor(metrics);
-  double get _af => BodyCalculator.armFactor(metrics);
-
   @override
   void paint(Canvas canvas, Size size) {
     final sc = min(size.width / _vw, size.height / _vh);
@@ -37,6 +31,44 @@ class BackBodyPainter extends CustomPainter {
     canvas.restore();
   }
 
+  double get _cf => BodyCalculator.chestFactor(metrics);
+  double get _wf => BodyCalculator.waistFactor(metrics);
+  double get _hf => BodyCalculator.hipFactor(metrics);
+  double get _sf => BodyCalculator.shoulderFactor(metrics);
+  double get _af => BodyCalculator.armFactor(metrics);
+  bool get _isFemale => metrics.gender == Gender.female;
+
+  // ── Y-coordinates ──
+  static const double yHeadT = 8;
+  static const double yHeadC = 30;
+  static const double yHeadB = 50;
+  static const double yNeckT = 44;
+  static const double yNeckB = 62;
+  static const double yShoul = 66;
+  static const double yArmpit = 84;
+  static const double yLat = 94;
+  static const double yWaist = 124;
+  static const double yGlute = 152;
+  static const double yCrotch = 170;
+  static const double yKnee = 258;
+  static const double yAnkle = 355;
+  static const double yFoot = 375;
+  static const double yHand = 172;
+
+  // ── X-widths (right half) ──
+  double get _headR => 19.0;
+  double get _neckW => 14.0;
+  double get _shoulW => 36.0 * _sf * (_isFemale ? 0.92 : 1.0);
+  double get _armW => 8.0 * _af;
+  double get _latW => 27.0 * _cf * 0.95;
+  double get _waistW => _isFemale ? 15.0 * _wf : 19.0 * _wf;
+  double get _gluteW => _isFemale ? 23.0 * _hf : 19.0 * _hf;
+  double get _thighW => 15.0 * _af;
+  double get _calfW => 12.0 * _af;
+
+  // ─────────────────────────────────────────
+  //  LAYER 1: Outline
+  // ─────────────────────────────────────────
   void _drawOutline(Canvas canvas) {
     final paint = Paint()
       ..color = Colors.black87
@@ -45,82 +77,96 @@ class BackBodyPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final cX = 28.0 * _cf;
-    final wX = 18.0 * _wf;
-    final hX = 26.0 * _hf;
-    final sX = 38.0 * _sf;
-    final aW = 9.0 * _af;
-    final tX = 18.0 * _af.clamp(0.9, 1.3);
-
     final p = Path();
 
-    // ── RIGHT HALF ──
-    p.moveTo(0, 10);
+    double hR = _headR, nW = _neckW, sW = _shoulW, aW = _armW;
+    double lW = _latW, wW = _waistW, gW = _gluteW;
+    double tW = _thighW, cW = _calfW;
 
-    p.cubicTo(17, 10, 18, 28, 16, 44);
-    p.cubicTo(14, 52, sX * 0.5, 58, sX, 62);
+    // ══ RIGHT HALF (top → bottom) ══
+    p.moveTo(0, yHeadT);
 
-    p.cubicTo(sX + 6, 64, sX + 10, 68, sX + 8, 72);
+    // Back of head
+    p.quadraticBezierTo(hR * 0.7, yHeadT, hR - 2, yHeadC - 4);
+    p.quadraticBezierTo(hR, yHeadC + 4, hR * 0.6, yHeadB);
 
-    final aOut = sX + aW + 2;
-    p.cubicTo(aOut, 76, aOut + 2, 108, aOut, 118);
-    p.cubicTo(aOut - 1, 148, aOut - 2, 156, aOut - 3, 170);
-    p.lineTo(sX + 4, 170);
+    // Back neck (wider trapezius)
+    p.cubicTo(nW * 0.4, yHeadB + 2, nW, yNeckB - 4, nW, yNeckB);
 
-    p.cubicTo(sX + 3, 156, sX + 2, 148, sX + 2, 118);
-    p.cubicTo(sX + 2, 108, sX + 4, 82, sX + 4, 82);
+    // Shoulder (trapezius ridge)
+    p.cubicTo(nW + 4, yNeckB + 2, sW, yShoul - 2, sW, yShoul + 4);
 
-    p.cubicTo(cX + 4, 82, cX + 6, 95, cX + 4, 100);
-    p.cubicTo(cX + 2, 110, wX + 4, 120, wX + 2, 125);
-    p.cubicTo(wX, 130, hX + 2, 140, hX + 4, 148);
-    p.cubicTo(hX + 3, 155, hX, 162, 0, 168);
+    // Arm outer
+    double aOut = sW + aW;
+    p.cubicTo(sW + 2, yShoul + 10, aOut, yShoul + 24, aOut, yHand - 20);
+    p.cubicTo(aOut + 1, yHand - 8, aOut - 1, yHand - 2, aOut - 2, yHand);
 
-    p.cubicTo(6, 172, tX * 0.6, 240, tX * 0.7, 252);
-    p.cubicTo(tX * 0.6, 264, tX * 0.4, 348, tX * 0.35, 358);
-    p.cubicTo(tX * 0.3, 364, tX * 0.25, 370, tX * 0.25, 372);
+    // Hand bottom
+    p.lineTo(sW + 2, yHand);
 
-    final fOut = tX * 1.2;
-    p.lineTo(fOut + 2, 372);
+    // Arm inner
+    p.cubicTo(sW + 2, yHand - 2, sW, yHand - 10, sW + 1, yHand - 22);
+    p.cubicTo(sW + 2, yArmpit + 10, sW + 3, yArmpit + 4, sW + 2, yArmpit + 6);
 
-    p.cubicTo(fOut + 3, 370, fOut + 2, 362, fOut, 358);
-    p.cubicTo(fOut - 1, 264, fOut + 1, 250, fOut, 252);
-    p.cubicTo(fOut - 1, 160, hX + 2, 158, hX + 2, 152);
-    p.cubicTo(hX + 2, 148, hX + 4, 152, hX + 4, 148);
+    // Back torso side (latissimus → waist → glute → crotch)
+    p.cubicTo(lW + 2, yArmpit + 12, lW + 4, yLat - 2, lW + 2, yLat + 4);
+    p.cubicTo(lW, yWaist - 12, wW + 2, yWaist - 4, wW, yWaist + 2);
+    p.cubicTo(wW - 1, yWaist + 8, gW + 1, yGlute - 4, gW + 2, yGlute + 2);
+    p.cubicTo(gW + 1, yGlute + 8, gW * 0.4, yCrotch - 2, 0, yCrotch);
 
-    // ── LEFT HALF (mirrored) ──
-    final m = -1.0;
+    // Right leg inner (down)
+    p.cubicTo(tW * 0.35, yCrotch + 8, tW * 0.5, yKnee - 24, tW * 0.5, yKnee - 4);
+    p.cubicTo(tW * 0.4, yKnee + 4, cW * 0.3, yAnkle - 10, cW * 0.3, yAnkle);
+    p.cubicTo(cW * 0.3, yAnkle + 4, cW * 0.2, yFoot - 4, cW * 0.2, yFoot);
 
-    p.cubicTo(hX * m + 4, 152, hX * m + 2, 148, hX * m + 2, 152);
-    p.cubicTo(hX * m + 2, 158, fOut * m, 160, fOut * m, 252);
-    p.cubicTo(fOut * m + 1, 250, fOut * m - 1, 264, fOut * m, 358);
-    p.cubicTo(fOut * m + 2, 362, fOut * m + 3, 370, fOut * m + 2, 372);
+    // Right foot bottom
+    double fOut = tW * 0.85;
+    p.lineTo(fOut + 2, yFoot);
 
-    p.lineTo(tX * 0.25 * m, 372);
+    // Right leg outer (up)
+    p.cubicTo(fOut + 3, yFoot - 4, fOut + 2, yAnkle + 4, fOut, yAnkle);
+    p.cubicTo(fOut - 1, yKnee + 4, fOut + 1, yKnee - 8, fOut, yKnee - 4);
+    p.cubicTo(fOut - 1, yGlute + 12, gW + 1, yGlute + 4, gW + 1, yGlute + 2);
 
-    p.cubicTo(tX * 0.25 * m, 370, tX * 0.3 * m, 364, tX * 0.35 * m, 358);
-    p.cubicTo(tX * 0.4 * m, 348, tX * 0.6 * m, 264, tX * 0.7 * m, 252);
-    p.cubicTo(tX * 0.6 * m, 240, 6 * m, 172, 0, 168);
+    // ══ LEFT HALF (bottom → top, mirrored) ══
+    double m = -1.0;
 
-    p.cubicTo(hX * m, 162, hX * m + 3, 155, hX * m + 4, 148);
-    p.cubicTo(hX * m + 2, 140, wX * m, 130, wX * m + 2, 125);
-    p.cubicTo(wX * m + 4, 120, cX * m + 2, 110, cX * m + 4, 100);
-    p.cubicTo(cX * m + 6, 95, cX * m + 4, 82, sX * m + 4, 82);
+    p.cubicTo(gW * m + 1, yGlute + 4, fOut * m, yGlute + 12, fOut * m, yKnee - 4);
+    p.cubicTo(fOut * m + 1, yKnee - 8, fOut * m - 1, yKnee + 4, fOut * m, yAnkle);
+    p.cubicTo(fOut * m + 2, yAnkle + 4, fOut * m + 3, yFoot - 4, fOut * m + 2, yFoot);
 
-    p.cubicTo(sX * m + 4, 82, sX * m + 2, 108, sX * m + 2, 118);
-    p.cubicTo(sX * m + 2, 148, sX * m + 3, 156, sX * m + 4, 170);
-    p.lineTo(aOut * m - 3, 170);
+    p.lineTo(cW * 0.2 * m, yFoot);
 
-    p.cubicTo(aOut * m + 1, 156, aOut * m - 1, 148, aOut * m, 118);
-    p.cubicTo(aOut * m + 2, 108, aOut * m, 76, sX * m + 8, 72);
+    p.cubicTo(cW * 0.2 * m, yFoot - 4, cW * 0.3 * m, yAnkle + 4, cW * 0.3 * m, yAnkle);
+    p.cubicTo(cW * 0.3 * m, yAnkle - 10, tW * 0.4 * m, yKnee + 4, tW * 0.5 * m, yKnee - 4);
+    p.cubicTo(tW * 0.5 * m, yKnee - 24, tW * 0.35 * m, yCrotch + 8, 0, yCrotch);
 
-    p.cubicTo(sX * m + 10, 68, sX * m + 6, 64, sX * m, 62);
-    p.cubicTo(sX * 0.5 * m, 58, 14 * m, 52, 0, 44);
-    p.cubicTo(0, 44, 0, 24, 0, 10);
+    p.cubicTo(gW * 0.4 * m, yCrotch - 2, gW * m + 1, yGlute + 8, gW * m + 2, yGlute + 2);
+    p.cubicTo(gW * m + 1, yGlute - 4, wW * m - 1, yWaist + 8, wW * m, yWaist + 2);
+    p.cubicTo(wW * m + 2, yWaist - 4, lW * m, yWaist - 12, lW * m + 2, yLat + 4);
+    p.cubicTo(lW * m + 4, yLat - 2, lW * m + 2, yArmpit + 12, sW * m + 2, yArmpit + 6);
+
+    p.cubicTo(sW * m + 3, yArmpit + 4, sW * m + 2, yArmpit + 10, sW * m + 1, yHand - 22);
+    p.cubicTo(sW * m, yHand - 10, sW * m + 2, yHand - 2, sW * m + 2, yHand);
+
+    p.lineTo((sW + 2) * m, yHand);
+
+    p.cubicTo((sW + 2) * m, yHand - 2, aOut * m + 1, yHand - 8, aOut * m, yHand - 20);
+    p.cubicTo(aOut * m, yShoul + 24, sW * m + 2, yShoul + 10, sW * m, yShoul + 4);
+
+    p.cubicTo(sW * m, yShoul - 2, nW * m + 4, yNeckB + 2, nW * m, yNeckB);
+    p.cubicTo(nW * m, yNeckB - 4, nW * 0.4 * m, yHeadB + 2, 0, yHeadB);
+    p.quadraticBezierTo(hR * 0.6 * m, yHeadB, hR * m, yHeadC + 4);
+    p.quadraticBezierTo(hR * m - 2, yHeadC - 4, hR * 0.7 * m, yHeadT);
+    p.lineTo(0, yHeadT);
 
     p.close();
     canvas.drawPath(p, paint);
   }
 
+  // ─────────────────────────────────────────
+  //  LAYER 2: Muscle Groups
+  // ─────────────────────────────────────────
   void _drawMuscles(Canvas canvas) {
     _drawMuscle(canvas, 'deltoid_left', _buildDeltoid(-1));
     _drawMuscle(canvas, 'deltoid_right', _buildDeltoid(1));
@@ -152,51 +198,49 @@ class BackBodyPainter extends CustomPainter {
   }
 
   Path _buildDeltoid(int side) {
-    final sX = 38.0 * _sf;
-    final aW = 9.0 * _af;
-    final s = side.toDouble();
+    double s = side.toDouble();
+    double sW = _shoulW, aW = _armW;
     final p = Path();
-    p.moveTo(sX * s, 62);
-    p.cubicTo((sX + aW + 2) * s, 66, (sX + aW + 2) * s, 100, (sX + aW - 2) * s, 108);
-    p.cubicTo((sX + 2) * s, 112, (sX + 2) * s, 82, sX * s * 0.7, 82);
-    p.cubicTo(sX * s * 0.5, 78, sX * s * 0.3, 66, sX * s, 62);
+    p.moveTo(sW * s, yShoul + 2);
+    p.quadraticBezierTo((sW + aW + 2) * s, yShoul + 16, (sW + aW - 1) * s, yShoul + 40);
+    p.quadraticBezierTo((sW + 2) * s, yArmpit - 4, sW * 0.5 * s, yArmpit + 2);
+    p.quadraticBezierTo(sW * 0.3 * s, yShoul + 10, sW * s, yShoul + 2);
     p.close();
     return p;
   }
 
   Path _buildLatissimus(int side) {
-    final cX = 28.0 * _cf;
-    final wX = 18.0 * _wf;
-    final s = side.toDouble();
+    double s = side.toDouble();
+    double lW = _latW, wW = _waistW;
     final p = Path();
-    p.moveTo(cX * 0.4 * s, 88);
-    p.cubicTo(cX * s, 86, cX * s + 2, 100, cX * s, 106);
-    p.cubicTo(cX * s - 1, 114, wX * s + 2, 120, wX * s - 1, 122);
-    p.cubicTo(wX * s - 3, 118, cX * 0.3 * s, 110, cX * 0.3 * s, 100);
+    p.moveTo(lW * 0.3 * s, yLat - 6);
+    p.quadraticBezierTo(lW * s, yLat - 8, lW * s - 1, yLat + 4);
+    p.quadraticBezierTo(lW * s - 2, yWaist - 8, wW * s - 1, yWaist);
+    p.quadraticBezierTo(wW * s - 3, yWaist - 6, lW * 0.3 * s, yLat + 4);
     p.close();
     return p;
   }
 
   Path _buildGlute(int side) {
-    final s = side.toDouble();
-    final hX = 26.0 * _hf;
+    double s = side.toDouble();
+    double gW = _gluteW;
     final p = Path();
-    p.moveTo(4, 160);
-    p.cubicTo(hX * 0.7 * s, 156, hX * s, 150, hX * s, 156);
-    p.cubicTo(hX * s, 162, hX * s - 2, 168, hX * 0.5 * s, 170);
-    p.cubicTo(hX * 0.2 * s, 172, 2, 168, 2, 164);
+    p.moveTo(4, yGlute + 4);
+    p.quadraticBezierTo(gW * 0.7 * s, yGlute - 2, gW * s, yGlute + 2);
+    p.quadraticBezierTo(gW * s - 1, yGlute + 10, gW * 0.5 * s, yGlute + 12);
+    p.quadraticBezierTo(gW * 0.2 * s, yGlute + 10, 2, yGlute + 6);
     p.close();
     return p;
   }
 
   Path _buildQuadriceps(int side) {
-    final s = side.toDouble();
-    final tX = 18.0 * _af.clamp(0.9, 1.3);
+    double s = side.toDouble();
+    double tW = _thighW;
     final p = Path();
-    p.moveTo(4, 170);
-    p.cubicTo(tX * s * 0.8, 172, tX * s, 186, tX * s, 244);
-    p.cubicTo(tX * s * 0.7, 250, tX * 0.4 * s, 254, 4, 252);
-    p.cubicTo(2, 250, 2, 172, 4, 170);
+    p.moveTo(4, yCrotch + 6);
+    p.quadraticBezierTo(tW * 0.7 * s, yCrotch + 20, tW * 0.7 * s, yKnee - 18);
+    p.quadraticBezierTo(tW * 0.5 * s, yKnee - 2, tW * 0.3 * s, yKnee);
+    p.quadraticBezierTo(2, yKnee - 2, 2, yCrotch + 8);
     p.close();
     return p;
   }

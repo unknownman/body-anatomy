@@ -15,12 +15,6 @@ class SideBodyPainter extends CustomPainter {
   static const double _vw = 200;
   static const double _vh = 440;
 
-  double get _cf => BodyCalculator.chestFactor(metrics);
-  double get _wf => BodyCalculator.waistFactor(metrics);
-  double get _hf => BodyCalculator.hipFactor(metrics);
-  double get _sf => BodyCalculator.shoulderFactor(metrics);
-  double get _af => BodyCalculator.armFactor(metrics);
-
   @override
   void paint(Canvas canvas, Size size) {
     final sc = min(size.width / _vw, size.height / _vh);
@@ -37,6 +31,35 @@ class SideBodyPainter extends CustomPainter {
     canvas.restore();
   }
 
+  double get _cf => BodyCalculator.chestFactor(metrics);
+  double get _wf => BodyCalculator.waistFactor(metrics);
+  double get _hf => BodyCalculator.hipFactor(metrics);
+  double get _sf => BodyCalculator.shoulderFactor(metrics);
+  double get _af => BodyCalculator.armFactor(metrics);
+  bool get _isFemale => metrics.gender == Gender.female;
+
+  // ── Y-coordinates ──
+  static const double yHeadT = 8;
+  static const double yHeadC = 28;
+  static const double yHeadB = 48;
+  static const double yNeckB = 62;
+  static const double yShoul = 66;
+  static const double yBust = 86;
+  static const double yUnder = 96;
+  static const double yWaist = 124;
+  static const double yHip = 152;
+  static const double yCrotch = 170;
+  static const double yKnee = 258;
+  static const double yAnkle = 355;
+  static const double yFoot = 375;
+  static const double yToe = 372;
+
+  double get _shoulW => 30.0 * _sf;
+  double get _armW => 7.0 * _af;
+
+  // ─────────────────────────────────────────
+  //  LAYER 1: Outline
+  // ─────────────────────────────────────────
   void _drawOutline(Canvas canvas) {
     final paint = Paint()
       ..color = Colors.black87
@@ -45,54 +68,104 @@ class SideBodyPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final cX = 28.0 * _cf;
-    final wX = 18.0 * _wf;
-    final hX = 26.0 * _hf;
-    final sX = 38.0 * _sf;
-    final aW = 9.0 * _af;
-
     final p = Path();
 
-    p.moveTo(0, 10);
+    // ══ FRONT CONTOUR (top → bottom) ══
+    p.moveTo(0, yHeadT);
 
-    p.cubicTo(30, 10, 44, 22, 52, 34);
-    p.cubicTo(56, 40, 56, 46, 52, 52);
+    // Forehead & nose
+    p.quadraticBezierTo(16, yHeadT + 4, 22, 18);
+    p.quadraticBezierTo(26, 22, 26, 28);
+    p.quadraticBezierTo(32, 30, 34, 32); // nose tip
 
-    p.cubicTo(48, 56, 42, 60, 38, 62);
+    // Lips & chin
+    p.quadraticBezierTo(28, 34, 30, 38); // to upper lip
+    p.quadraticBezierTo(28, 40, 30, 42); // lower lip
+    p.quadraticBezierTo(28, 44, 26, 48); // chin
 
-    final chestP = 40 + cX * 0.2;
-    p.cubicTo(36, 64, chestP, 74, chestP, 82);
-    p.cubicTo(chestP, 90, 34 + wX * 0.1, 114, 34 + wX * 0.1, 122);
-    p.cubicTo(34 + wX * 0.1, 130, 32 + hX * 0.1, 150, 32 + hX * 0.1, 155);
-    p.cubicTo(36, 270, 32, 316, 30, 358);
-    p.cubicTo(28, 364, 30, 368, 44, 374);
+    // Throat & neck
+    p.quadraticBezierTo(22, 52, 20, 58);
+    p.lineTo(20, yNeckB);
 
-    p.cubicTo(50, 376, 52, 378, 48, 380);
-    p.cubicTo(36, 382, 20, 378, 4, 376);
+    // Chest / bust (gender-aware)
+    if (_isFemale) {
+      double bustP = 34 + _cf * 3;
+      p.cubicTo(22, yShoul + 6, bustP, yBust - 8, bustP, yBust);
+      p.quadraticBezierTo(bustP - 2, yBust + 6, 28 - _cf, yUnder);
+    } else {
+      double chestP = 28 + _cf * 2;
+      p.cubicTo(22, yShoul + 4, chestP, yBust - 4, chestP - 2, yBust + 2);
+      p.quadraticBezierTo(chestP - 4, yUnder - 4, 24, yUnder);
+    }
 
-    p.cubicTo(-6, 374, -10, 370, -8, 358);
-    p.cubicTo(-6, 348, -12, 316, -16, 310);
-    p.cubicTo(-22, 302, -22, 270, -18, 260);
-    p.cubicTo(-14, 250, -12, 206, -16, 200);
+    // Abdomen
+    double bellyP = 22 + _wf * 4;
+    p.cubicTo(24, yUnder + 8, bellyP, yWaist - 6, bellyP - 2, yWaist + 4);
 
-    final gluteX = -36 * _hf;
-    p.cubicTo(-18, 192, gluteX, 164, gluteX, 158);
-    p.cubicTo(gluteX - 2, 150, gluteX + 2, 144, -28, 140);
+    // Pelvis
+    double pelvisP = 22 + _hf * 3;
+    p.cubicTo(bellyP - 4, yWaist + 12, pelvisP, yHip - 4, pelvisP - 2, yHip + 4);
 
-    p.cubicTo(-24, 136, -20, 114, -22, 110);
-    p.cubicTo(-26, 104, -24, 80, -30, 76);
-    p.cubicTo(-34, 72, -28, 64, -24, 60);
+    // Crotch
+    p.cubicTo(pelvisP - 4, yHip + 12, 12, yCrotch - 2, 8, yCrotch);
 
-    p.cubicTo(-20, 54, -22, 44, -18, 34);
-    p.cubicTo(-14, 24, -6, 12, 0, 10);
+    // Front thigh
+    p.cubicTo(12, yCrotch + 6, 18, yCrotch + 30, 18, yKnee - 30);
+    p.quadraticBezierTo(18, yKnee - 6, 16, yKnee);
+
+    // Shin
+    p.cubicTo(16, yKnee + 8, 14, yCrotch + 150, 12, yAnkle - 10);
+    p.quadraticBezierTo(12, yAnkle + 2, 10, yAnkle);
+
+    // Foot top
+    p.cubicTo(10, yAnkle + 4, 22, yToe - 6, 26, yToe);
+
+    // Foot tip
+    p.quadraticBezierTo(28, yFoot - 2, 24, yFoot + 2);
+
+    // ══ BOTTOM (foot) ══
+    p.cubicTo(20, yFoot + 6, 4, yFoot + 6, -6, yFoot + 2);
+    p.quadraticBezierTo(-10, yFoot, -8, yFoot - 2);
+
+    // ══ BACK CONTOUR (bottom → top) ══
+    // Heel & Achilles
+    p.quadraticBezierTo(-6, yFoot - 6, -4, yAnkle + 2);
+
+    // Calf
+    double calfP = -4 - _af * 10;
+    p.cubicTo(-4, yAnkle - 8, calfP, yCrotch + 130, calfP + 2, yKnee + 20);
+    p.quadraticBezierTo(calfP + 4, yKnee - 4, -6, yKnee);
+
+    // Back thigh
+    p.cubicTo(-6, yKnee - 8, -12, yCrotch + 30, -12, yCrotch + 4);
+    p.cubicTo(-12, yCrotch - 2, -10, yHip + 8, -10, yHip + 4);
+
+    // Glutes (gender-aware)
+    double gluteP = _isFemale ? -30 - _hf * 6 : -24 - _hf * 4;
+    p.cubicTo(-10, yHip - 4, gluteP, yWaist + 24, gluteP + 2, yWaist + 6);
+    p.quadraticBezierTo(gluteP + 4, yWaist - 2, -12, yWaist);
+
+    // Lower back
+    p.cubicTo(-12, yWaist - 8, -14, yUnder + 4, -14, yUnder);
+
+    // Upper back (gender-aware: broader for males)
+    double backP = _isFemale ? -16 : -18 - _sf * 2;
+    p.cubicTo(-14, yUnder - 8, backP, yBust - 6, backP + 2, yShoul + 8);
+    p.quadraticBezierTo(backP - 2, yNeckB + 2, -12, yNeckB);
+
+    // Back of neck & head
+    p.quadraticBezierTo(-10, yNeckB - 6, -14, yHeadC + 6);
+    p.quadraticBezierTo(-16, yHeadC - 6, -10, yHeadT + 6);
+    p.quadraticBezierTo(-4, yHeadT, 0, yHeadT);
 
     p.close();
     canvas.drawPath(p, paint);
 
-    _drawSideArm(canvas, sX, aW);
+    // Draw arm separately
+    _drawArm(canvas);
   }
 
-  void _drawSideArm(Canvas canvas, double sX, double aW) {
+  void _drawArm(Canvas canvas) {
     final paint = Paint()
       ..color = Colors.black87
       ..style = PaintingStyle.stroke
@@ -100,20 +173,31 @@ class SideBodyPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    final armW = aW * 0.7;
-    final shX = sX * 0.7;
+    double sW = _shoulW, aW = _armW;
+    double shX = sW * 0.55;
+    double aEnd = yKnee - 50;
 
     final p = Path();
-    p.moveTo(shX, 66);
-    p.cubicTo(shX + armW, 70, shX + armW + 2, 100, shX + armW, 116);
-    p.cubicTo(shX + armW - 1, 124, shX, 140, shX - 2, 156);
-    p.cubicTo(shX - 4, 162, shX + 2, 166, shX + 4, 162);
-    p.cubicTo(shX + 6, 154, shX + 8, 132, shX + 6, 118);
-    p.cubicTo(shX + 4, 104, shX + 2, 70, shX, 66);
+    p.moveTo(shX, yShoul + 2);
+
+    // Outer arm down
+    p.quadraticBezierTo(shX + aW, yShoul + 16, shX + aW, yWaist - 20);
+    p.quadraticBezierTo(shX + aW - 1, yWaist + 10, shX - 2, aEnd);
+
+    // Hand
+    p.lineTo(shX - 6, aEnd);
+
+    // Inner arm up
+    p.quadraticBezierTo(shX - 2, yWaist + 4, shX - 1, yWaist - 20);
+    p.quadraticBezierTo(shX - 1, yShoul + 14, shX - 2, yShoul + 2);
+
     p.close();
     canvas.drawPath(p, paint);
   }
 
+  // ─────────────────────────────────────────
+  //  LAYER 2: Muscle Groups
+  // ─────────────────────────────────────────
   void _drawMuscles(Canvas canvas) {
     _drawMuscle(canvas, 'deltoid_right', _buildDeltoid());
     _drawMuscle(canvas, 'pectoral_right', _buildPectoral());
@@ -142,52 +226,57 @@ class SideBodyPainter extends CustomPainter {
   }
 
   Path _buildDeltoid() {
-    final sX = 38.0 * _sf;
-    final aW = 9.0 * _af;
+    double sW = _shoulW;
+    double aW = _armW;
     final p = Path();
-    p.moveTo(24, 64);
-    p.cubicTo(sX * 0.8 + aW * 0.5, sX * 0.1 + 60, sX * 0.8 + aW * 0.5, 92, sX * 0.7 + aW * 0.3, 100);
-    p.cubicTo(sX * 0.5, 102, 22, 92, 24, 64);
+    p.moveTo(20, yShoul + 2);
+    p.quadraticBezierTo(sW * 0.6 + aW, yShoul + 8, sW * 0.6 + aW - 2, yShoul + 36);
+    p.quadraticBezierTo(sW * 0.5, yShoul + 42, 20, yShoul + 20);
     p.close();
     return p;
   }
 
   Path _buildPectoral() {
-    final cX = 28.0 * _cf;
+    double c = _cf;
     final p = Path();
-    p.moveTo(30, 78);
-    p.cubicTo(38 + cX * 0.15, 76, 42 + cX * 0.15, 84, 38 + cX * 0.1, 90);
-    p.cubicTo(34, 92, 26, 86, 30, 78);
+    p.moveTo(18, yShoul + 10);
+    p.quadraticBezierTo(30 + c * 2, yBust - 12, 32 + c * 2, yBust - 2);
+    p.quadraticBezierTo(30 + c * 2, yBust + 6, 24, yUnder - 4);
+    p.quadraticBezierTo(20, yUnder - 12, 18, yShoul + 20);
     p.close();
     return p;
   }
 
   Path _buildAbdominals() {
-    final wX = 18.0 * _wf;
+    double w = _wf;
     final p = Path();
-    p.moveTo(26, 108);
-    p.cubicTo(30 + wX * 0.1, 110, 32 + wX * 0.1, 126, 28 + wX * 0.08, 136);
-    p.cubicTo(24, 134, 22, 118, 26, 108);
+    p.moveTo(18, yUnder + 6);
+    p.quadraticBezierTo(24 + w * 2, yWaist - 8, 22 + w * 2, yWaist + 2);
+    p.quadraticBezierTo(20 + w * 2, yWaist + 12, 14, yWaist + 4);
+    p.quadraticBezierTo(16, yUnder + 10, 18, yUnder + 6);
     p.close();
     return p;
   }
 
   Path _buildGlute() {
-    final hX = 26.0 * _hf;
+    double h = _hf;
+    bool f = _isFemale;
     final p = Path();
-    final gX = -36 * hX / 26;
-    p.moveTo(-14, 148);
-    p.cubicTo(gX * 0.7, 144, gX, 152, gX * 0.9, 158);
-    p.cubicTo(gX * 0.7, 164, -16, 168, -10, 162);
+    double gX = f ? -28 - h * 6 : -22 - h * 4;
+    p.moveTo(-10, yHip + 4);
+    p.quadraticBezierTo(gX, yWaist + 20, gX + 2, yWaist + 6);
+    p.quadraticBezierTo(gX + 4, yWaist - 2, -12, yWaist);
+    p.quadraticBezierTo(-10, yWaist + 8, -10, yHip + 4);
     p.close();
     return p;
   }
 
   Path _buildQuadriceps() {
     final p = Path();
-    p.moveTo(26, 164);
-    p.cubicTo(34, 168, 36, 206, 34, 240);
-    p.cubicTo(28, 244, 22, 216, 22, 180);
+    p.moveTo(8, yCrotch + 4);
+    p.quadraticBezierTo(16, yCrotch + 18, 17, yKnee - 30);
+    p.quadraticBezierTo(16, yKnee - 4, 14, yKnee);
+    p.quadraticBezierTo(10, yKnee - 4, 6, yCrotch + 8);
     p.close();
     return p;
   }
